@@ -10,18 +10,30 @@ interface Song {
 
 export function SongList() {
   const [songs, setSongs] = useState<Song[]>([]);
-  const [currentSong, setCurrentSong] = useState<Song | null>(null);
+  const [currentIndex, setCurrentIndex] = useState<number | null>(null);
 
   useEffect(() => {
-    fetch("http://localhost:3000/songs")
+    fetch("http://172.19.22.88:3000/songs")
       .then((res) => res.json())
       .then((data) => setSongs(data))
       .catch((error) => console.error("Error fetching songs:", error));
   }, []);
 
-  const handleSongSelect = (song: Song) => {
-    setCurrentSong(song);
+  const handleSongSelect = (index: number) => {
+    setCurrentIndex(index);
     setTimeout(() => document.getElementById("play-button")?.click(), 100);
+  };
+
+  const handleNext = () => {
+    if (currentIndex !== null && currentIndex < songs.length - 1) {
+      setCurrentIndex(currentIndex + 1);
+    }
+  };
+
+  const handlePrevious = () => {
+    if (currentIndex !== null && currentIndex > 0) {
+      setCurrentIndex(currentIndex - 1);
+    }
   };
 
   return (
@@ -32,7 +44,7 @@ export function SongList() {
           <Card
             key={song.id}
             className="p-4 cursor-pointer hover:bg-muted rounded-2xl border-2 bg-gradient-to-b from-background to-muted/50 shadow-lg"
-            onClick={() => handleSongSelect(song)}
+            onClick={() => handleSongSelect(idx)}
           >
             <CardContent>
               {/* <img
@@ -50,16 +62,18 @@ export function SongList() {
       </div>
 
       {/* Music Player */}
-      {currentSong && (
+      {currentIndex !== null && songs[currentIndex] && (
         <MusicPlayer
           track={{
-            id: currentSong.id.toString(),
-            title: currentSong.title,
-            artist: currentSong.artist,
+            id: songs[currentIndex].id.toString(),
+            title: songs[currentIndex].title,
+            artist: songs[currentIndex].artist,
             coverUrl:
-              "https://i1.sndcdn.com/artworks-000012560643-t526va-t500x500.jpg", // Placeholder image
-            audioUrl: `http://localhost:3000/stream/${currentSong.id}/192`,
+              "https://i1.sndcdn.com/artworks-000012560643-t526va-t500x500.jpg", // Placeholder
+            audioUrl: `http://172.19.22.88:3000/stream/${songs[currentIndex].id}/192`,
           }}
+          onNext={handleNext}
+          onPrevious={handlePrevious}
         />
       )}
     </div>

@@ -22,7 +22,13 @@ interface Track {
   audioUrl: string;
 }
 
-export function MusicPlayer({ track }: { track: Track }) {
+interface MusicPlayerProps {
+  track: Track;
+  onNext: () => void;
+  onPrevious: () => void;
+}
+
+export function MusicPlayer({ track, onNext, onPrevious }: MusicPlayerProps) {
   const defaultCoverUrl =
     "https://i1.sndcdn.com/artworks-000012560643-t526va-t500x500.jpg";
   track.coverUrl = track.coverUrl || defaultCoverUrl;
@@ -43,9 +49,8 @@ export function MusicPlayer({ track }: { track: Track }) {
   // Auto-play when the track changes
   useEffect(() => {
     onLoad();
-  }, [track]); // Trigger when track changes
+  }, [track]);
 
-  // Format time (seconds -> mm:ss)
   const formatTime = (time: number) => {
     if (isNaN(time)) return "00:00";
     const minutes = Math.floor(time / 60);
@@ -59,7 +64,7 @@ export function MusicPlayer({ track }: { track: Track }) {
     <Card className="w-full border-2 bg-gradient-to-b from-background to-muted/50 shadow-lg p-2.5 rounded-2xl">
       <CardContent className="p-0">
         <div className="flex flex-col md:flex-row">
-          {/* Album art section */}
+          {/* Album Art */}
           <div className="relative w-full md:w-1/3 aspect-square md:aspect-auto md:h-auto overflow-hidden">
             <img
               src={track.coverUrl}
@@ -74,7 +79,7 @@ export function MusicPlayer({ track }: { track: Track }) {
             </div>
           </div>
 
-          {/* Controls section */}
+          {/* Controls */}
           <div className="flex-1 p-6 flex flex-col justify-between">
             <div className="hidden md:block mb-6">
               <h3 className="font-bold text-2xl">{track.title}</h3>
@@ -102,7 +107,10 @@ export function MusicPlayer({ track }: { track: Track }) {
                 <button className="text-muted-foreground hover:text-foreground transition-colors">
                   <Shuffle size={20} />
                 </button>
-                <button className="text-muted-foreground hover:text-foreground transition-colors">
+                <button
+                  onClick={onPrevious}
+                  className="text-muted-foreground hover:text-foreground transition-colors"
+                >
                   <SkipBack size={24} />
                 </button>
                 <Toggle
@@ -117,7 +125,10 @@ export function MusicPlayer({ track }: { track: Track }) {
                     <Play size={24} className="ml-1" />
                   )}
                 </Toggle>
-                <button className="text-muted-foreground hover:text-foreground transition-colors">
+                <button
+                  onClick={onNext}
+                  className="text-muted-foreground hover:text-foreground transition-colors"
+                >
                   <SkipForward size={24} />
                 </button>
                 <button className="text-muted-foreground hover:text-foreground transition-colors">
@@ -126,7 +137,7 @@ export function MusicPlayer({ track }: { track: Track }) {
               </div>
             </div>
 
-            {/* Volume control */}
+            {/* Volume */}
             <div className="flex items-center gap-3">
               <button
                 onClick={toggleMute}
