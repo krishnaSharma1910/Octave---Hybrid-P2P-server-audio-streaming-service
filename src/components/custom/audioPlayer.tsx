@@ -12,6 +12,7 @@ import {
   SkipForward,
   Volume2,
   VolumeX,
+  
 } from "lucide-react";
 
 interface Track {
@@ -22,13 +23,16 @@ interface Track {
   audioUrl: string;
 }
 
+
+
 interface MusicPlayerProps {
   track: Track;
   onNext: () => void;
   onPrevious: () => void;
+  handleToggleLoop: () => void;
 }
 
-export function MusicPlayer({ track, onNext, onPrevious }: MusicPlayerProps) {
+export function MusicPlayer({ track, onNext, onPrevious, handleToggleLoop }: MusicPlayerProps) {
   const defaultCoverUrl =
     "https://i1.sndcdn.com/artworks-000012560643-t526va-t500x500.jpg";
   track.coverUrl = track.coverUrl || defaultCoverUrl;
@@ -63,9 +67,9 @@ export function MusicPlayer({ track, onNext, onPrevious }: MusicPlayerProps) {
   return (
     <Card className="w-full border-2 bg-gradient-to-b from-background to-muted/50 shadow-lg p-2.5 rounded-2xl">
       <CardContent className="p-0">
-        <div className="flex flex-col md:flex-row">
+        <div className="flex flex-col ">
           {/* Album Art */}
-          <div className="relative w-full md:w-1/3 aspect-square md:aspect-auto md:h-auto overflow-hidden">
+          <div className="relative w-full aspect-square md:aspect-auto md:h-auto overflow-hidden">
             <img
               src={track.coverUrl}
               alt={`${track.title} cover`}
@@ -131,7 +135,7 @@ export function MusicPlayer({ track, onNext, onPrevious }: MusicPlayerProps) {
                 >
                   <SkipForward size={24} />
                 </button>
-                <button className="text-muted-foreground hover:text-foreground transition-colors">
+                <button onClick={handleToggleLoop} className="text-muted-foreground hover:text-foreground transition-colors">
                   <Repeat size={20} />
                 </button>
               </div>
