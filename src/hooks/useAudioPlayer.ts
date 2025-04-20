@@ -1,12 +1,13 @@
-// useAudioPlayer.ts - Custom hook to manage audio playback with Howler
 import { useState, useEffect, useRef } from "react";
 import { Howl } from "howler";
 
 interface UseAudioPlayerProps {
   src: string;
+  loop?: boolean;
+  onEnd?: () => void; // Callback for track end
 }
 
-export function useAudioPlayer({ src }: UseAudioPlayerProps) {
+export function useAudioPlayer({ src, loop = false, onEnd }: UseAudioPlayerProps) {
   const [isPlaying, setIsPlaying] = useState(false);
   const [progress, setProgress] = useState(0);
   const [duration, setDuration] = useState(0);
@@ -23,13 +24,17 @@ export function useAudioPlayer({ src }: UseAudioPlayerProps) {
       src: [src],
       html5: true,
       volume,
-      onload: () => setDuration(sound.duration()),
-      onend: () => {
-        setIsPlaying(false);
-        setProgress(0);
+      loop,
+      onload: () => {
+        setDuration(sound.duration());
       },
       onplay: () => {
         requestAnimationFrame(updateProgress);
+      },
+      onend: () => {
+        setIsPlaying(false);
+        setProgress(0);
+        if (onEnd) onEnd(); // Call external handler
       },
     });
 
@@ -38,7 +43,7 @@ export function useAudioPlayer({ src }: UseAudioPlayerProps) {
     return () => {
       sound.unload();
     };
-  }, [src]);
+  }, [src, loop]);
 
   const updateProgress = () => {
     if (!soundRef.current) return;
@@ -52,10 +57,12 @@ export function useAudioPlayer({ src }: UseAudioPlayerProps) {
     if (!soundRef.current) return;
     if (isPlaying) {
       soundRef.current.pause();
+      setIsPlaying(false);
     } else {
       soundRef.current.play();
+      setIsPlaying(true);
+      requestAnimationFrame(updateProgress);
     }
-    setIsPlaying(!isPlaying);
   };
 
   const handleSeek = (value: number) => {
@@ -65,17 +72,19 @@ export function useAudioPlayer({ src }: UseAudioPlayerProps) {
   };
 
   const handleVolumeChange = (value: number) => {
-    setVolume(value / 100);
+    const newVolume = value / 100;
+    setVolume(newVolume);
     if (soundRef.current) {
-      soundRef.current.volume(value / 100);
+      soundRef.current.volume(newVolume);
     }
-    setIsMuted(value === 0);
+    setIsMuted(newVolume === 0);
   };
 
   const toggleMute = () => {
-    setIsMuted(!isMuted);
+    const newMute = !isMuted;
+    setIsMuted(newMute);
     if (soundRef.current) {
-      soundRef.current.mute(!isMuted);
+      soundRef.current.mute(newMute);
     }
   };
 

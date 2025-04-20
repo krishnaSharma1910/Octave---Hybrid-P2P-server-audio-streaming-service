@@ -12,7 +12,6 @@ import {
   SkipForward,
   Volume2,
   VolumeX,
-  
 } from "lucide-react";
 
 interface Track {
@@ -23,19 +22,25 @@ interface Track {
   audioUrl: string;
 }
 
-
-
 interface MusicPlayerProps {
   track: Track;
   onNext: () => void;
   onPrevious: () => void;
   handleToggleLoop: () => void;
+  loopQueue: Track[];
+  isLooping: boolean;
 }
 
-export function MusicPlayer({ track, onNext, onPrevious, handleToggleLoop }: MusicPlayerProps) {
+export function MusicPlayer({
+  track,
+  onNext,
+  onPrevious,
+  handleToggleLoop,
+  loopQueue,
+  isLooping,
+}: MusicPlayerProps) {
   const defaultCoverUrl =
     "https://i1.sndcdn.com/artworks-000012560643-t526va-t500x500.jpg";
-  track.coverUrl = track.coverUrl || defaultCoverUrl;
 
   const {
     isPlaying,
@@ -48,9 +53,17 @@ export function MusicPlayer({ track, onNext, onPrevious, handleToggleLoop }: Mus
     isMuted,
     toggleMute,
     onLoad,
-  } = useAudioPlayer({ src: track.audioUrl });
+  } = useAudioPlayer({
+    src: track.audioUrl,
+    loop: isLooping,
+    onEnd: () => {
+      if (!isLooping) {
+        onNext();
+      }
+    },
+  });
 
-  // Auto-play when the track changes
+  // Play automatically when track changes
   useEffect(() => {
     onLoad();
   }, [track]);
@@ -67,11 +80,11 @@ export function MusicPlayer({ track, onNext, onPrevious, handleToggleLoop }: Mus
   return (
     <Card className="w-full border-2 bg-gradient-to-b from-background to-muted/50 shadow-lg p-2.5 rounded-2xl">
       <CardContent className="p-0">
-        <div className="flex flex-col ">
+        <div className="flex flex-col">
           {/* Album Art */}
           <div className="relative w-full aspect-square md:aspect-auto md:h-auto overflow-hidden">
             <img
-              src={track.coverUrl}
+              src={track.coverUrl || defaultCoverUrl}
               alt={`${track.title} cover`}
               className="object-cover w-full h-full rounded-2xl"
             />
@@ -123,11 +136,7 @@ export function MusicPlayer({ track, onNext, onPrevious, handleToggleLoop }: Mus
                   className="h-12 w-12 rounded-full data-[state=on]:bg-primary data-[state=on]:text-primary-foreground flex items-center justify-center"
                   aria-label={isPlaying ? "Pause" : "Play"}
                 >
-                  {isPlaying ? (
-                    <Pause size={24} />
-                  ) : (
-                    <Play size={24} className="ml-1" />
-                  )}
+                  {isPlaying ? <Pause size={24} /> : <Play size={24} />}
                 </Toggle>
                 <button
                   onClick={onNext}
@@ -135,7 +144,12 @@ export function MusicPlayer({ track, onNext, onPrevious, handleToggleLoop }: Mus
                 >
                   <SkipForward size={24} />
                 </button>
-                <button onClick={handleToggleLoop} className="text-muted-foreground hover:text-foreground transition-colors">
+                <button
+                  onClick={handleToggleLoop}
+                  className={`text-muted-foreground hover:text-foreground transition-colors ${
+                    isLooping ? "text-primary" : ""
+                  }`}
+                >
                   <Repeat size={20} />
                 </button>
               </div>
