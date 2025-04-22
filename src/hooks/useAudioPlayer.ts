@@ -1,99 +1,84 @@
 import { useState, useEffect, useRef } from "react";
-import { Howl } from "howler";
+// import { Howl } from "howler";
 
 interface UseAudioPlayerProps {
-  src: string;
-  loop?: boolean;
-  onEnd?: () => void; // Callback for track end
+  src: string;       
+  onEnded?: () => void;
 }
-
-export function useAudioPlayer({ src, loop = false, onEnd }: UseAudioPlayerProps) {
+interface UseAudioPlayerResult {
+  isPlaying: boolean;
+  togglePlayPause: () => void;
+  progress: number;
+  duration: number;
+  handleSeek: (time: number) => void;
+  volume: number;
+  handleVolumeChange: (vol: number) => void;
+  isMuted: boolean;
+  toggleMute: () => void;
+  onLoad: () => void;
+}
+export function useAudioPlayer({ src, onEnded }: UseAudioPlayerProps): UseAudioPlayerResult {
+  const audioRef = useRef(new Audio(src));
   const [isPlaying, setIsPlaying] = useState(false);
   const [progress, setProgress] = useState(0);
   const [duration, setDuration] = useState(0);
-  const [volume, setVolume] = useState(0.8);
+  const [volume, setVolume] = useState(1);
   const [isMuted, setIsMuted] = useState(false);
-  const soundRef = useRef<Howl | null>(null);
 
   useEffect(() => {
-    if (soundRef.current) {
-      soundRef.current.unload();
-    }
+    const audio = audioRef.current;
 
-    const sound = new Howl({
-      src: [src],
-      html5: true,
-      volume,
-      loop,
-      onload: () => {
-        setDuration(sound.duration());
-      },
-      onplay: () => {
-        requestAnimationFrame(updateProgress);
-      },
-      onend: () => {
-        setIsPlaying(false);
-        setProgress(0);
-        if (onEnd) onEnd(); // Call external handler
-      },
-    });
+    const updateProgress = () => setProgress(audio.currentTime);
+    const handleLoadedMetadata = () => setDuration(audio.duration);
+    const handleEnded = () => {
+      setIsPlaying(false);
+      if (onEnded) onEnded(); 
+    };
 
-    soundRef.current = sound;
+    audio.addEventListener("timeupdate", updateProgress);
+    audio.addEventListener("loadedmetadata", handleLoadedMetadata);
+    audio.addEventListener("ended", handleEnded);
 
     return () => {
-      sound.unload();
+      audio.removeEventListener("timeupdate", updateProgress);
+      audio.removeEventListener("loadedmetadata", handleLoadedMetadata);
+      audio.removeEventListener("ended", handleEnded);
     };
-  }, [src, loop]);
+  }, [onEnded]);
 
-  const updateProgress = () => {
-    if (!soundRef.current) return;
-    setProgress(soundRef.current.seek() as number);
-    if (soundRef.current.playing()) {
-      requestAnimationFrame(updateProgress);
-    }
-  };
+  useEffect(() => {
+    audioRef.current.src = src;
+    audioRef.current.load();
+  }, [src]);
 
   const togglePlayPause = () => {
-    if (!soundRef.current) return;
     if (isPlaying) {
-      soundRef.current.pause();
-      setIsPlaying(false);
+      audioRef.current.pause();
     } else {
-      soundRef.current.play();
-      setIsPlaying(true);
-      requestAnimationFrame(updateProgress);
+      audioRef.current.play();
     }
+    setIsPlaying(!isPlaying);
   };
 
-  const handleSeek = (value: number) => {
-    if (!soundRef.current) return;
-    soundRef.current.seek(value);
-    setProgress(value);
+  const handleSeek = (time: number) => {
+    audioRef.current.currentTime = time;
+    setProgress(time);
   };
 
-  const handleVolumeChange = (value: number) => {
-    const newVolume = value / 100;
-    setVolume(newVolume);
-    if (soundRef.current) {
-      soundRef.current.volume(newVolume);
-    }
-    setIsMuted(newVolume === 0);
+  const handleVolumeChange = (vol: number) => {
+    audioRef.current.volume = vol;
+    setVolume(vol);
   };
 
   const toggleMute = () => {
-    const newMute = !isMuted;
-    setIsMuted(newMute);
-    if (soundRef.current) {
-      soundRef.current.mute(newMute);
-    }
+    const muted = !isMuted;
+    audioRef.current.muted = muted;
+    setIsMuted(muted);
   };
 
   const onLoad = () => {
-    if (!soundRef.current) return;
-    soundRef.current.play();
+    audioRef.current.play();
     setIsPlaying(true);
-    setDuration(soundRef.current.duration());
-    requestAnimationFrame(updateProgress);
   };
 
   return {

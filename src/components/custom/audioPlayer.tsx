@@ -26,18 +26,16 @@ interface MusicPlayerProps {
   track: Track;
   onNext: () => void;
   onPrevious: () => void;
-  handleToggleLoop: () => void;
-  loopQueue: Track[];
-  isLooping: boolean;
+  isLooping: boolean; 
+  onLoopToggle: () => void; 
 }
 
 export function MusicPlayer({
   track,
   onNext,
   onPrevious,
-  handleToggleLoop,
-  loopQueue,
   isLooping,
+  onLoopToggle,
 }: MusicPlayerProps) {
   const defaultCoverUrl =
     "https://i1.sndcdn.com/artworks-000012560643-t526va-t500x500.jpg";
@@ -54,14 +52,16 @@ export function MusicPlayer({
     toggleMute,
     onLoad,
   } = useAudioPlayer({
-    src: track.audioUrl,
-    loop: isLooping,
-    onEnd: () => {
+    src: track.audioUrl, 
+    onEnded: () => {
       if (!isLooping) {
-        onNext();
+        onNext(); // handle next track
+      } else {
+        onLoad(); // loop the current track
       }
     },
   });
+    
 
   // Play automatically when track changes
   useEffect(() => {
@@ -107,7 +107,7 @@ export function MusicPlayer({
             <div className="space-y-2 mb-6">
               <Slider
                 value={[progress]}
-                max={duration || 100}
+                max={duration}
                 step={0.1}
                 onValueChange={(value) => handleSeek(value[0])}
                 className="cursor-pointer"
@@ -144,14 +144,23 @@ export function MusicPlayer({
                 >
                   <SkipForward size={24} />
                 </button>
-                <button
-                  onClick={handleToggleLoop}
+                <Toggle
+                  pressed={isLooping}
+                  onPressedChange={onLoopToggle}
+                  className="h-12 w-12 rounded-full flex items-center justify-center text-muted-foreground hover:text-foreground transition-colors data-[state=on]:text-primary"
+                   aria-label="Repeat"
+                >
+                  <Repeat size={24} />
+                </Toggle>
+
+                {/* <button
+                  onClick={onLoopToggle} // <-- bind the toggle loop function
                   className={`text-muted-foreground hover:text-foreground transition-colors ${
                     isLooping ? "text-primary" : ""
                   }`}
                 >
                   <Repeat size={20} />
-                </button>
+                </button> */}
               </div>
             </div>
 

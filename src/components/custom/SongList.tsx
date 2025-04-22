@@ -18,11 +18,11 @@ interface Song {
 export function SongList() {
   const [songs, setSongs] = useState<Song[]>([]);
   const [queue, setQueue] = useState<Song[]>([]);
+  const [isUsingCustomQueue, setIsUsingCustomQueue] = useState(false);
   const [customQueue, setCustomQueue] = useState<Song[]>([]);
   const [currentIndex, setCurrentIndex] = useState<number>(0);
-  const [isLooping, setIsLooping] = useState<Song[]>([]);
-  const [loopStateIndex, setLoopStateIndex] = useState<number>(0);
   const [currentSong, setCurrentSong] = useState<Song>();
+  const [isLooping, setIsLooping] = useState<boolean>(false);
 
   useEffect(() => {
     fetch("http://172.19.22.88:3000/songs")
@@ -38,55 +38,43 @@ export function SongList() {
     setCurrentSong(queue[currentIndex]);
   }, [queue, currentIndex]);
 
-  useEffect(() => {
-    if (isLooping.length === 0) {
-      setQueue(songs);
-      setCurrentIndex(loopStateIndex);
-    } 
-  }, [isLooping]);
-
   const handleSongSelect = (selected: Song) => {
     const index = queue.findIndex((s) => s.id === selected.id);
     setCurrentIndex(index);
   };
-
+  
+  useEffect(() => {
+    const activeQueue = isUsingCustomQueue ? customQueue : queue;
+    setCurrentSong(activeQueue[currentIndex]);
+  }, [queue, customQueue, currentIndex, isUsingCustomQueue]);
+  
   const handleNext = () => {
-    if (isLooping.length > 0) {
-      // Stay on the same song by re-setting the same index
-      setCurrentIndex((prev) => prev);
-    } else {
-      if (queue.length === 0) return;
-      setCurrentIndex((prevIndex) => (prevIndex + 1) % queue.length);
-    }
+    const activeQueue = isUsingCustomQueue ? customQueue : queue;
+    if (activeQueue.length === 0) return;
+  
+    setCurrentIndex((prevIndex) => (prevIndex + 1) % activeQueue.length);
   };
   
   const handlePrevious = () => {
-    if (isLooping.length > 0) {
-      setCurrentIndex((prev) => prev); // Just stay on the same index
-    } else {
-      if (queue.length === 0) return;
-      setCurrentIndex((prevIndex) =>
-        prevIndex === 0 ? queue.length - 1 : prevIndex - 1
-      );
-    }
+    const activeQueue = isUsingCustomQueue ? customQueue : queue;
+    if (activeQueue.length === 0) return;
+  
+    setCurrentIndex((prevIndex) =>
+      prevIndex === 0 ? activeQueue.length - 1 : prevIndex - 1
+    );
   };
   
-
   const toggleLoop = () => {
-    if (isLooping.includes(songs[currentIndex])) {
-      setLoopStateIndex(currentIndex);
-      setIsLooping([]);
-      console.log("loop off");
-    } else {
-      setIsLooping([songs[currentIndex]]);
-      console.log("loop on");
-    }
+    setIsLooping(!isLooping); // Toggle the loop state
   };
 
   const playCustomQueue = () => {
-    setQueue(customQueue);
+    if (customQueue.length === 0) return;
+    setQueue(customQueue); // Optional: keep this if you want UI to show it
+    setIsUsingCustomQueue(true);
     setCurrentIndex(0);
   };
+  
 
   const addToPlayList = (sidx: number) => {
     setCustomQueue((prev) => [...prev, songs[sidx]]);
@@ -157,8 +145,8 @@ export function SongList() {
             }}
             onNext={handleNext}
             onPrevious={handlePrevious}
-            loopQueue={isLooping}
-            handleToggleLoop={toggleLoop}
+            isLooping={isLooping} // Pass the loop state to MusicPlayer
+            onLoopToggle={toggleLoop} // Pass the loop toggle function to MusicPlayer
           />
         )}
       </div>
