@@ -23,6 +23,9 @@ export function SongList() {
   const [currentIndex, setCurrentIndex] = useState<number>(0);
   const [currentSong, setCurrentSong] = useState<Song>();
   const [isLooping, setIsLooping] = useState<boolean>(false);
+  const [isShuffling, setIsShuffling] = useState<boolean>(false);
+ 
+
 
   useEffect(() => {
     fetch("http://172.19.22.88:3000/songs")
@@ -68,6 +71,31 @@ export function SongList() {
     setIsLooping(!isLooping); // Toggle the loop state
   };
 
+  
+  const handleShuffleToggle = () => {
+    console.log(queue)
+    console.log(songs[currentIndex])
+    setIsShuffling((prev) => {
+      const newShuffleState = !prev;
+  
+      if (newShuffleState) {
+        const currentSongInPlay = queue[currentIndex];
+      
+        const shuffled = [...songs].sort(() => Math.random() - 0.5);
+        const indexOfCSP = shuffled.findIndex((s) => s.id === currentSongInPlay.id);
+        setQueue(shuffled);
+        setCurrentIndex(indexOfCSP);
+      } else {
+        const currentSongInPlay = queue[currentIndex];
+        const indexOfCSP = songs.findIndex((s) => s.id === currentSongInPlay.id);
+        setQueue(songs);
+        setCurrentIndex(indexOfCSP); // Reset to first in original queue
+      }
+  
+      return newShuffleState;
+    });
+  };
+  
   const playCustomQueue = () => {
     if (customQueue.length === 0) return;
     setQueue(customQueue); // Optional: keep this if you want UI to show it
@@ -147,6 +175,9 @@ export function SongList() {
             onPrevious={handlePrevious}
             isLooping={isLooping} // Pass the loop state to MusicPlayer
             onLoopToggle={toggleLoop} // Pass the loop toggle function to MusicPlayer
+            onShuffle={handleShuffleToggle}
+            isShuffling={isShuffling}
+            
           />
         )}
       </div>

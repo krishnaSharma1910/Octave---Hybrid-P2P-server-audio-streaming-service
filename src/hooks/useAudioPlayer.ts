@@ -47,9 +47,12 @@ export function useAudioPlayer({ src, onEnded }: UseAudioPlayerProps): UseAudioP
   }, [onEnded]);
 
   useEffect(() => {
-    audioRef.current.src = src;
-    audioRef.current.load();
+    const audio = audioRef.current;
+    audio.src = src;
+    audio.load();
+    audio.volume = volume;
   }, [src]);
+  
 
   const togglePlayPause = () => {
     if (isPlaying) {

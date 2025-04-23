@@ -27,7 +27,9 @@ interface MusicPlayerProps {
   onNext: () => void;
   onPrevious: () => void;
   isLooping: boolean; 
+  isShuffling: boolean;
   onLoopToggle: () => void; 
+  onShuffle: () => void;
 }
 
 export function MusicPlayer({
@@ -36,6 +38,8 @@ export function MusicPlayer({
   onPrevious,
   isLooping,
   onLoopToggle,
+  onShuffle,
+  isShuffling,
 }: MusicPlayerProps) {
   const defaultCoverUrl =
     "https://i1.sndcdn.com/artworks-000012560643-t526va-t500x500.jpg";
@@ -123,7 +127,12 @@ export function MusicPlayer({
             {/* Main controls */}
             <div className="flex items-center justify-between mb-6">
               <div className="flex-1 flex justify-center gap-4">
-                <button className="text-muted-foreground hover:text-foreground transition-colors">
+                <button 
+                onClick={onShuffle}
+                className={`text-muted-foreground hover:text-foreground transition-colors ${
+                  isShuffling ? 'text-primary' : ''
+                }`}
+                aria-label="Shuffle">
                   <Shuffle size={20} />
                 </button>
                 <button
@@ -179,7 +188,7 @@ export function MusicPlayer({
                 value={[isMuted ? 0 : volume * 100]}
                 max={100}
                 step={1}
-                onValueChange={(value) => handleVolumeChange(value[0])}
+                onValueChange={(value) => handleVolumeChange(value[0] / 100)}
                 className="cursor-pointer max-w-48"
               />
             </div>
