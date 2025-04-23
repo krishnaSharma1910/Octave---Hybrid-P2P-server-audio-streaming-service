@@ -55,14 +55,13 @@ export function MusicPlayer({
     src: track.audioUrl, 
     onEnded: () => {
       if (!isLooping) {
-        onNext(); // handle next track
+        onNext(); // handle next song
       } else {
-        onLoad(); // loop the current track
+        onLoad(); // loop the current song
       }
     },
   });
     
-
   // Play automatically when track changes
   useEffect(() => {
     onLoad();
@@ -70,9 +69,12 @@ export function MusicPlayer({
 
   const formatTime = (time: number) => {
     if (isNaN(time)) return "00:00";
-    const minutes = Math.floor(time / 60);
+    const hours = Math.floor(time / 3600);
+    const minutes = Math.floor((time % 3600)/ 60);
     const seconds = Math.floor(time % 60);
-    return `${minutes.toString().padStart(2, "0")}:${seconds
+
+    const hoursStr = hours > 0 ? `${hours.toString().padStart(2,"0")}:` : "";
+    return `${hoursStr}${minutes.toString().padStart(2, "0")}:${seconds
       .toString()
       .padStart(2, "0")}`;
   };
