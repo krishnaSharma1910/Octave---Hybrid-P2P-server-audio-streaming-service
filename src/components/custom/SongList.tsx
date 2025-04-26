@@ -8,6 +8,7 @@ import {
   ContextMenuTrigger,
 } from "@/components/ui/context-menu";
 import { Heart } from "lucide-react";
+import { ScrollingText } from "./scrollingText";
 
 interface Song {
   id: number;
@@ -136,7 +137,9 @@ export function SongList() {
                     </div>
                     <div className="col-span-2">
                       <h3 className="text-lg font-bold">{song.title}</h3>
-                      <p className="text-sm text-muted-foreground">{song.artist}</p>
+                      {/* <ScrollingText text={song.title} className="text-lg font-bold" /> */}
+                      <ScrollingText text={song.artist} className="text-sm text-muted-foreground pr-1" />
+                      {/* <p className="text-sm text-muted-foreground">{song.artist}</p> */}
                     </div>
                   </CardContent>
                 </Card>
