@@ -2,7 +2,7 @@ import { useEffect } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Slider } from "@/components/ui/slider";
 import { Toggle } from "@/components/ui/toggle";
-import { useHlsAudioPlayer } from "@/hooks/varientUseAudioPlayer"; // Changed import
+import { useHlsAudioPlayer } from "@/hooks/varientUseAudioPlayer"; 
 import {
   Pause,
   Play,
@@ -80,7 +80,7 @@ export function MusicPlayer({
   // Show error if HLS fails to load
   useEffect(() => {
     if (error) {
-      console.error("Player error:", error);
+      console.error("Player Error:", error);
     }
   }, [error]);
 

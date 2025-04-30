@@ -33,7 +33,7 @@ export function SongList() {
     try {
       setIsLoading(true);
       const response = await fetch("http://172.19.22.88:3000/songs");
-      if (!response.ok) throw new Error("Failed to fetch songs");
+      if (!response.ok) throw new Error("Server is down");
       const data = await response.json();
       setSongs(data);
       setQueue(data);
