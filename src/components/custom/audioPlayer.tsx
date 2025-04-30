@@ -2,7 +2,7 @@ import { useEffect } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Slider } from "@/components/ui/slider";
 import { Toggle } from "@/components/ui/toggle";
-import { useAudioPlayer } from "@/hooks/useAudioPlayer";
+import { useHlsAudioPlayer } from "@/hooks/varientUseAudioPlayer"; // Changed import
 import {
   Pause,
   Play,
@@ -21,7 +21,7 @@ interface Track {
   coverUrl?: string;
   audioUrl: string;
 }
-
+// Update the MusicPlayerProps interface to include src
 interface MusicPlayerProps {
   track: Track;
   onNext: () => void;
@@ -30,6 +30,7 @@ interface MusicPlayerProps {
   isShuffling: boolean;
   onLoopToggle: () => void; 
   onShuffle: () => void;
+  //src: string; // Add src to the props
 }
 
 export function MusicPlayer({
@@ -40,6 +41,7 @@ export function MusicPlayer({
   onLoopToggle,
   onShuffle,
   isShuffling,
+  //src, // Destructure src from props
 }: MusicPlayerProps) {
   const defaultCoverUrl =
     "https://i1.sndcdn.com/artworks-000012560643-t526va-t500x500.jpg";
@@ -55,21 +57,32 @@ export function MusicPlayer({
     isMuted,
     toggleMute,
     onLoad,
-  } = useAudioPlayer({
-    src: track.audioUrl, 
+    isLoading,
+    error,
+  } = useHlsAudioPlayer({
+    src: track.audioUrl, // Now src is properly defined
     onEnded: () => {
       if (!isLooping) {
-        onNext(); // handle next song
+        onNext();
       } else {
-        onLoad(); // loop the current song
+        onLoad();
       }
     },
+    autoPlay: true,
   });
+    
     
   // Play automatically when track changes
   useEffect(() => {
     onLoad();
   }, [track]);
+
+  // Show error if HLS fails to load
+  useEffect(() => {
+    if (error) {
+      console.error("Player error:", error);
+    }
+  }, [error]);
 
   const formatTime = (time: number) => {
     if (isNaN(time)) return "00:00";
@@ -94,6 +107,11 @@ export function MusicPlayer({
               alt={`${track.title} cover`}
               className="object-cover w-full h-full rounded-2xl"
             />
+            {isLoading && (
+              <div className="absolute inset-0 bg-black/50 flex items-center justify-center">
+                <p className="text-white">Loading stream...</p>
+              </div>
+            )}
             <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent md:hidden flex items-end p-4">
               <div className="text-white">
                 <h3 className="font-bold text-xl">{track.title}</h3>
@@ -117,6 +135,7 @@ export function MusicPlayer({
                 step={0.1}
                 onValueChange={(value) => handleSeek(value[0])}
                 className="cursor-pointer"
+                disabled={isLoading} // Disable while loading
               />
               <div className="flex justify-between text-sm text-muted-foreground">
                 <span>{formatTime(progress)}</span>
@@ -128,16 +147,19 @@ export function MusicPlayer({
             <div className="flex items-center justify-between mb-6">
               <div className="flex-1 flex justify-center gap-4">
                 <button 
-                onClick={onShuffle}
-                className={`text-muted-foreground hover:text-foreground transition-colors ${
-                  isShuffling ? 'text-primary' : ''
-                }`}
-                aria-label="Shuffle">
+                  onClick={onShuffle}
+                  className={`text-muted-foreground hover:text-foreground transition-colors ${
+                    isShuffling ? 'text-primary' : ''
+                  }`}
+                  aria-label="Shuffle"
+                  disabled={isLoading}
+                >
                   <Shuffle size={20} />
                 </button>
                 <button
                   onClick={onPrevious}
                   className="text-muted-foreground hover:text-foreground transition-colors"
+                  disabled={isLoading}
                 >
                   <SkipBack size={24} />
                 </button>
@@ -146,12 +168,14 @@ export function MusicPlayer({
                   onPressedChange={togglePlayPause}
                   className="h-12 w-12 rounded-full data-[state=on]:bg-primary data-[state=on]:text-primary-foreground flex items-center justify-center"
                   aria-label={isPlaying ? "Pause" : "Play"}
+                  disabled={isLoading}
                 >
                   {isPlaying ? <Pause size={24} /> : <Play size={24} />}
                 </Toggle>
                 <button
                   onClick={onNext}
                   className="text-muted-foreground hover:text-foreground transition-colors"
+                  disabled={isLoading}
                 >
                   <SkipForward size={24} />
                 </button>
@@ -159,19 +183,11 @@ export function MusicPlayer({
                   pressed={isLooping}
                   onPressedChange={onLoopToggle}
                   className="h-12 w-12 rounded-full flex items-center justify-center text-muted-foreground hover:text-foreground transition-colors data-[state=on]:text-primary"
-                   aria-label="Repeat"
+                  aria-label="Repeat"
+                  disabled={isLoading}
                 >
                   <Repeat size={24} />
                 </Toggle>
-
-                {/* <button
-                  onClick={onLoopToggle} // <-- bind the toggle loop function
-                  className={`text-muted-foreground hover:text-foreground transition-colors ${
-                    isLooping ? "text-primary" : ""
-                  }`}
-                >
-                  <Repeat size={20} />
-                </button> */}
               </div>
             </div>
 
@@ -181,6 +197,7 @@ export function MusicPlayer({
                 onClick={toggleMute}
                 className="text-muted-foreground hover:text-foreground transition-colors"
                 aria-label={isMuted ? "Unmute" : "Mute"}
+                disabled={isLoading}
               >
                 {isMuted ? <VolumeX size={20} /> : <Volume2 size={20} />}
               </button>
@@ -190,6 +207,7 @@ export function MusicPlayer({
                 step={1}
                 onValueChange={(value) => handleVolumeChange(value[0] / 100)}
                 className="cursor-pointer max-w-48"
+                disabled={isLoading}
               />
             </div>
           </div>

@@ -4,6 +4,7 @@ import Hls from "hls.js";
 interface UseAudioPlayerProps {
   src: string;
   onEnded?: () => void;
+  autoPlay?: boolean;
 }
 
 interface UseAudioPlayerResult {
@@ -16,13 +17,17 @@ interface UseAudioPlayerResult {
   handleVolumeChange: (vol: number) => void;
   isMuted: boolean;
   toggleMute: () => void;
+  isLoading: boolean;
+  error: Error | null;
+  onLoad: () => void;
 }
 
 export function useHlsAudioPlayer({
   src,
   onEnded,
+  autoPlay = false,
 }: UseAudioPlayerProps): UseAudioPlayerResult {
-  const audioRef = useRef<HTMLVideoElement | null>(null);
+  const audioRef = useRef<HTMLAudioElement | null>(null);
   const hlsRef = useRef<Hls | null>(null);
 
   const [isPlaying, setIsPlaying] = useState(false);
@@ -30,71 +35,150 @@ export function useHlsAudioPlayer({
   const [duration, setDuration] = useState(0);
   const [volume, setVolume] = useState(1);
   const [isMuted, setIsMuted] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<Error | null>(null);
 
   useEffect(() => {
-    const audio = document.createElement("video");
+    const audio = new Audio();
     audioRef.current = audio;
+    audio.preload = "auto";
+    audio.volume = volume;
+
+    const handleGenericError = (errorType: string, details?: string) => {
+      setError(new Error(`Player Error: ${errorType}${details ? ` - ${details}` : ''}`));
+      setIsLoading(false);
+    };
 
     if (Hls.isSupported()) {
-      const hls = new Hls();
+      const hls = new Hls({
+        enableWorker: true,
+        lowLatencyMode: true,
+        backBufferLength: 30,
+      });
       hlsRef.current = hls;
+
+      hls.on(Hls.Events.ERROR, (_, data) => {
+        if (data.fatal) {
+          switch (data.type) {
+            case Hls.ErrorTypes.NETWORK_ERROR:
+              hls.startLoad();
+              break;
+            case Hls.ErrorTypes.MEDIA_ERROR:
+              hls.recoverMediaError();
+              break;
+            default:
+              handleGenericError('Fatal HLS Error', data.details);
+              hls.destroy();
+              break;
+          }
+        }
+      });
 
       hls.loadSource(src);
       hls.attachMedia(audio);
 
       hls.on(Hls.Events.MANIFEST_PARSED, () => {
         setDuration(audio.duration);
+        setIsLoading(false);
+        if (autoPlay) {
+          audio.play().catch(e => handleGenericError('Playback failed', e.message));
+        }
       });
     } else if (audio.canPlayType("application/vnd.apple.mpegurl")) {
+      // Native HLS support
       audio.src = src;
+      audio.addEventListener('loadedmetadata', () => {
+        setDuration(audio.duration);
+        setIsLoading(false);
+        if (autoPlay) {
+          audio.play().catch(e => handleGenericError('Playback failed', e.message));
+        }
+      });
+      
+      audio.addEventListener('error', () => {
+        handleGenericError('Native HLS playback failed');
+      });
+    } else {
+      handleGenericError('HLS is not supported in this browser');
     }
 
-    audio.addEventListener("timeupdate", () => setProgress(audio.currentTime));
-    audio.addEventListener("ended", () => {
+    const updateProgress = () => setProgress(audio.currentTime);
+    const handleEnded = () => {
       setIsPlaying(false);
       onEnded?.();
-    });
+    };
+    const handlePlay = () => setIsPlaying(true);
+    const handlePause = () => setIsPlaying(false);
+    const handleVolumeChange = () => {
+      setVolume(audio.volume);
+      setIsMuted(audio.muted);
+    };
+
+    audio.addEventListener("timeupdate", updateProgress);
+    audio.addEventListener("ended", handleEnded);
+    audio.addEventListener("play", handlePlay);
+    audio.addEventListener("pause", handlePause);
+    audio.addEventListener("volumechange", handleVolumeChange);
 
     return () => {
       audio.pause();
       audio.removeAttribute("src");
       audio.load();
       hlsRef.current?.destroy();
+      audio.removeEventListener("timeupdate", updateProgress);
+      audio.removeEventListener("ended", handleEnded);
+      audio.removeEventListener("play", handlePlay);
+      audio.removeEventListener("pause", handlePause);
+      audio.removeEventListener("volumechange", handleVolumeChange);
     };
-  }, [src]);
+  }, [src, onEnded, autoPlay, volume]);
 
   const togglePlayPause = () => {
-    const video = audioRef.current;
-    if (!video) return;
+    const audio = audioRef.current;
+    if (!audio) return;
 
-    if (video.paused) {
-      video.play();
-      setIsPlaying(true);
+    if (audio.paused) {
+      audio.play().catch(e => setError(new Error(`Play failed: ${e.message}`)));
     } else {
-      video.pause();
-      setIsPlaying(false);
+      audio.pause();
     }
   };
 
   const handleSeek = (time: number) => {
-    if (audioRef.current) {
-      audioRef.current.currentTime = time;
+    const audio = audioRef.current;
+    if (audio) {
+      audio.currentTime = time;
       setProgress(time);
     }
   };
 
   const handleVolumeChange = (vol: number) => {
-    if (audioRef.current) {
-      audioRef.current.volume = vol;
+    const audio = audioRef.current;
+    if (audio) {
+      audio.volume = vol;
       setVolume(vol);
+      if (vol === 0) {
+        audio.muted = true;
+        setIsMuted(true);
+      } else if (isMuted) {
+        audio.muted = false;
+        setIsMuted(false);
+      }
     }
   };
 
   const toggleMute = () => {
-    if (audioRef.current) {
-      const newMuted = !isMuted;
-      audioRef.current.muted = newMuted;
-      setIsMuted(newMuted);
+    const audio = audioRef.current;
+    if (audio) {
+      audio.muted = !audio.muted;
+      setIsMuted(audio.muted);
+    }
+  };
+
+  const onLoad = () => {
+    const audio = audioRef.current;
+    if (audio) {
+      audio.play().catch(e => setError(new Error(`Play failed: ${e.message}`)));
     }
   };
 
@@ -108,5 +192,8 @@ export function useHlsAudioPlayer({
     handleVolumeChange,
     isMuted,
     toggleMute,
+    isLoading,
+    error,
+    onLoad,
   };
 }

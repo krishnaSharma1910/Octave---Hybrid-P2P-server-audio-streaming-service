@@ -10,6 +10,8 @@ interface ScrollingTextProps {
   pauseOnHover?: boolean;
   width?: string;
   height?: string;
+  repeatCount?: number;
+  direction?: "left" | "right";
 }
 
 export function ScrollingText({
@@ -19,12 +21,14 @@ export function ScrollingText({
   pauseOnHover = true,
   width = "300px",
   height = "50px",
+  repeatCount = 2,
+  direction = "left",
 }: ScrollingTextProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const textRef = useRef<HTMLDivElement>(null);
+  const [needsAnimation, setNeedsAnimation] = useState(false);
   const [animationDuration, setAnimationDuration] = useState(15);
 
-  // Set animation speed
   useEffect(() => {
     const speedMap = {
       slow: 20,
@@ -34,31 +38,39 @@ export function ScrollingText({
     setAnimationDuration(speedMap[speed]);
   }, [speed]);
 
-  // Calculate animation duration based on text length
   useEffect(() => {
     if (textRef.current && containerRef.current) {
       const textWidth = textRef.current.scrollWidth;
       const containerWidth = containerRef.current.clientWidth;
+      const shouldAnimate = textWidth > containerWidth;
 
-      // Only animate if text is wider than container
-      if (textWidth > containerWidth) {
-        const textElement = textRef.current;
-        textElement.style.animationDuration = `${animationDuration}s`;
-        textElement.style.animationName = "scrollText";
+      setNeedsAnimation(shouldAnimate);
+
+      if (shouldAnimate) {
+        const duration = (textWidth / containerWidth) * animationDuration;
+        textRef.current.style.animationDuration = `${duration}s`;
       } else {
-        // Center the text if it doesn't overflow
         const textElement = textRef.current;
-        textElement.style.animationName = "none";
+        textElement.style.animation = "none";
         textElement.style.transform = "translateX(0)";
       }
     }
   }, [text, animationDuration]);
 
+  const renderText = () => {
+    if (!needsAnimation) return text;
+    return Array.from({ length: repeatCount }, (_, i) => (
+      <span key={i} className="inline-block pr-4">
+        {text}
+      </span>
+    ));
+  };
+
   return (
     <div
       ref={containerRef}
       className={cn(
-        "relative overflow-hidden rounded-md",
+        "relative overflow-hidden rounded-md flex items-center",
         className
       )}
       style={{
@@ -70,30 +82,38 @@ export function ScrollingText({
       <div
         ref={textRef}
         className={cn(
-          "absolute whitespace-nowrap",
+          "whitespace-nowrap",
+          needsAnimation && "animate-scroll",
           pauseOnHover && "hover:animation-play-state-paused"
         )}
         style={{
-          animation: `scrollText ${animationDuration}s linear infinite`,
+          ...(needsAnimation && {
+            animationDirection: direction === "left" ? "normal" : "reverse",
+          }),
         }}
       >
-        {text}
+        {renderText()}
       </div>
 
-      <style>{`
-        @keyframes scrollText {
-          0% {
-            transform: translateX(100%);
+      {/* Removed jsx prop from style element */}
+      <style>
+        {`
+          @keyframes scroll {
+            0% {
+              transform: translateX(0);
+            }
+            100% {
+              transform: translateX(-50%);
+            }
           }
-          100% {
-            transform: translateX(-100%);
+          .animate-scroll {
+            animation: scroll linear infinite;
           }
-        }
-
-        .hover\\:animation-play-state-paused:hover {
-          animation-play-state: paused;
-        }
-      `}</style>
+          .hover\\:animation-play-state-paused:hover {
+            animation-play-state: paused;
+          }
+        `}
+      </style>
     </div>
   );
 }
