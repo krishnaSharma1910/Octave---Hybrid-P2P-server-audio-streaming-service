@@ -5,6 +5,7 @@ interface UseAudioPlayerProps {
   src: string;
   onEnded?: () => void;
   autoPlay?: boolean;
+  loop?: boolean;
 }
 
 interface UseAudioPlayerResult {
@@ -26,6 +27,7 @@ export function useHlsAudioPlayer({
   src,
   onEnded,
   autoPlay = false,
+  loop = false,
 }: UseAudioPlayerProps): UseAudioPlayerResult {
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const hlsRef = useRef<Hls | null>(null);
@@ -42,10 +44,13 @@ export function useHlsAudioPlayer({
     const audio = new Audio();
     audioRef.current = audio;
     audio.preload = "auto";
+    audio.loop = loop; // set loop at init
     audio.volume = volume;
 
     const handleGenericError = (errorType: string, details?: string) => {
-      setError(new Error(`Player Error: ${errorType}${details ? ` - ${details}` : ''}`));
+      setError(
+        new Error(`Player Error: ${errorType}${details ? ` - ${details}` : ""}`)
+      );
       setIsLoading(false);
     };
 
@@ -67,7 +72,7 @@ export function useHlsAudioPlayer({
               hls.recoverMediaError();
               break;
             default:
-              handleGenericError('Fatal HLS Error', data.details);
+              handleGenericError("Fatal HLS Error", data.details);
               hls.destroy();
               break;
           }
@@ -81,25 +86,28 @@ export function useHlsAudioPlayer({
         setDuration(audio.duration);
         setIsLoading(false);
         if (autoPlay) {
-          audio.play().catch(e => handleGenericError('Playback failed', e.message));
+          audio
+            .play()
+            .catch((e) => handleGenericError("Playback failed", e.message));
         }
       });
     } else if (audio.canPlayType("application/vnd.apple.mpegurl")) {
-      // Native HLS support
       audio.src = src;
-      audio.addEventListener('loadedmetadata', () => {
+      audio.addEventListener("loadedmetadata", () => {
         setDuration(audio.duration);
         setIsLoading(false);
         if (autoPlay) {
-          audio.play().catch(e => handleGenericError('Playback failed', e.message));
+          audio
+            .play()
+            .catch((e) => handleGenericError("Playback failed", e.message));
         }
       });
-      
-      audio.addEventListener('error', () => {
-        handleGenericError('Native HLS playback failed');
+
+      audio.addEventListener("error", () => {
+        handleGenericError("Native HLS playback failed");
       });
     } else {
-      handleGenericError('HLS is not supported in this browser');
+      handleGenericError("HLS is not supported in this browser");
     }
 
     const updateProgress = () => setProgress(audio.currentTime);
@@ -131,14 +139,32 @@ export function useHlsAudioPlayer({
       audio.removeEventListener("pause", handlePause);
       audio.removeEventListener("volumechange", handleVolumeChange);
     };
-  }, [src, onEnded, autoPlay, volume]);
+  }, [src, onEnded, autoPlay]); // ✅ removed volume & loop
+
+  // ✅ Update volume dynamically
+  useEffect(() => {
+    const audio = audioRef.current;
+    if (audio) {
+      audio.volume = volume;
+    }
+  }, [volume]);
+
+  // ✅ Update loop dynamically
+  useEffect(() => {
+    const audio = audioRef.current;
+    if (audio) {
+      audio.loop = loop;
+    }
+  }, [loop]);
 
   const togglePlayPause = () => {
     const audio = audioRef.current;
     if (!audio) return;
 
     if (audio.paused) {
-      audio.play().catch(e => setError(new Error(`Play failed: ${e.message}`)));
+      audio
+        .play()
+        .catch((e) => setError(new Error(`Play failed: ${e.message}`)));
     } else {
       audio.pause();
     }
@@ -178,7 +204,9 @@ export function useHlsAudioPlayer({
   const onLoad = () => {
     const audio = audioRef.current;
     if (audio) {
-      audio.play().catch(e => setError(new Error(`Play failed: ${e.message}`)));
+      audio
+        .play()
+        .catch((e) => setError(new Error(`Play failed: ${e.message}`)));
     }
   };
 

@@ -11,12 +11,17 @@ import { Heart } from "lucide-react";
 import { ScrollingText } from "./scrollingText";
 
 interface Song {
-  id: number;
+  id: string;
   title: string;
   artist: string;
+  manifestUri: string;
 }
 
-export function SongList() {
+export function 
+
+
+
+  SongList() {
   const [songs, setSongs] = useState<Song[]>([]);
   const [queue, setQueue] = useState<Song[]>([]);
   const [isUsingCustomQueue, setIsUsingCustomQueue] = useState(false);
@@ -32,7 +37,7 @@ export function SongList() {
   const fetchSongs = useCallback(async () => {
     try {
       setIsLoading(true);
-      const response = await fetch("http://172.19.22.88:3000/songs");
+      const response = await fetch("http://localhost:3001/getAllTrack");
       if (!response.ok) throw new Error("Server is down");
       const data = await response.json();
       setSongs(data);
@@ -102,14 +107,14 @@ export function SongList() {
     setCurrentIndex(0);
   }, [customQueue]);
 
-  const addToPlayList = useCallback((songId: number) => {
+  const addToPlayList = useCallback((songId: string) => {
     const songToAdd = songs.find((s) => s.id === songId);
     if (songToAdd && !customQueue.some((q) => q.id === songId)) {
       setCustomQueue((prev) => [...prev, songToAdd]);
     }
   }, [songs, customQueue]);
 
-  const removeFromPlayList = useCallback((songId: number) => {
+  const removeFromPlayList = useCallback((songId: string) => {
     setCustomQueue((prev) => prev.filter((q) => q.id !== songId));
   }, []);
 
@@ -185,7 +190,8 @@ export function SongList() {
               title: currentSong.title,
               artist: currentSong.artist,
               coverUrl: "https://i1.sndcdn.com/artworks-000012560643-t526va-t500x500.jpg",
-              audioUrl: `http://172.19.22.88:3000/stream/${currentSong.id}/192`,
+              // audioUrl: `http://172.19.22.88:3000/stream/${currentSong.id}/192`,
+              
             }}
             onNext={handleNext}
             onPrevious={handlePrevious}
@@ -193,6 +199,7 @@ export function SongList() {
             onLoopToggle={toggleLoop}
             onShuffle={handleShuffleToggle}
             isShuffling={isShuffling}
+            manifestSrc={currentSong.manifestUri}
           />
         )}
       </div>

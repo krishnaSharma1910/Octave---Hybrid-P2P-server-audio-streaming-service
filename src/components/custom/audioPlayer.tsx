@@ -19,18 +19,17 @@ interface Track {
   title: string;
   artist: string;
   coverUrl?: string;
-  audioUrl: string;
 }
 // Update the MusicPlayerProps interface to include src
 interface MusicPlayerProps {
   track: Track;
   onNext: () => void;
   onPrevious: () => void;
-  isLooping: boolean; 
+  isLooping: boolean;
   isShuffling: boolean;
-  onLoopToggle: () => void; 
+  onLoopToggle: () => void;
   onShuffle: () => void;
-  //src: string; // Add src to the props
+  manifestSrc: string; // Add src to the props
 }
 
 export function MusicPlayer({
@@ -41,7 +40,7 @@ export function MusicPlayer({
   onLoopToggle,
   onShuffle,
   isShuffling,
-  //src, // Destructure src from props
+  manifestSrc, // Destructure src from props
 }: MusicPlayerProps) {
   const defaultCoverUrl =
     "https://i1.sndcdn.com/artworks-000012560643-t526va-t500x500.jpg";
@@ -56,27 +55,16 @@ export function MusicPlayer({
     handleVolumeChange,
     isMuted,
     toggleMute,
-    onLoad,
     isLoading,
     error,
   } = useHlsAudioPlayer({
-    src: track.audioUrl, // Now src is properly defined
-    onEnded: () => {
-      if (!isLooping) {
-        onNext();
-      } else {
-        onLoad();
-      }
-    },
+    src: manifestSrc,
+    onEnded: onNext,
     autoPlay: true,
+    loop: isLooping,
   });
     
-    
-  // Play automatically when track changes
-  useEffect(() => {
-    onLoad();
-  }, [track]);
-
+  
   // Show error if HLS fails to load
   useEffect(() => {
     if (error) {
