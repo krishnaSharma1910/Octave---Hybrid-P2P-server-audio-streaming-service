@@ -37,7 +37,7 @@ export function
   const fetchSongs = useCallback(async () => {
     try {
       setIsLoading(true);
-      const response = await fetch("http://localhost:3001/getAllTrack");
+      const response = await fetch("http://localhost:3000/getAllTrack");
       if (!response.ok) throw new Error("Server is down");
       const data = await response.json();
       setSongs(data);

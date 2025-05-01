@@ -72,6 +72,10 @@ export function MusicPlayer({
     }
   }, [error]);
 
+  useEffect(() => {
+    console.log("Progress updated in UI:", progress);
+  }, [progress]);
+
   const formatTime = (time: number) => {
     if (isNaN(time)) return "00:00";
     const hours = Math.floor(time / 3600);
@@ -118,13 +122,17 @@ export function MusicPlayer({
             {/* Progress bar */}
             <div className="space-y-2 mb-6">
               <Slider
-                value={[progress]}
-                max={duration}
+                value={[isNaN(progress) ? 0 : progress]}
+                max={isNaN(duration) ? 0 : duration}
                 step={0.1}
-                onValueChange={(value) => handleSeek(value[0])}
+                onValueChange={(value) => {
+                  const newTime = value[0];
+                  if (isFinite(newTime)) handleSeek(newTime);
+                }}
                 className="cursor-pointer"
-                disabled={isLoading} // Disable while loading
+                disabled={isLoading || isNaN(duration)}
               />
+
               <div className="flex justify-between text-sm text-muted-foreground">
                 <span>{formatTime(progress)}</span>
                 <span>{formatTime(duration)}</span>
@@ -134,10 +142,10 @@ export function MusicPlayer({
             {/* Main controls */}
             <div className="flex items-center justify-between mb-6">
               <div className="flex-1 flex justify-center gap-4">
-                <button 
+                <button
                   onClick={onShuffle}
                   className={`text-muted-foreground hover:text-foreground transition-colors ${
-                    isShuffling ? 'text-primary' : ''
+                    isShuffling ? "text-primary" : ""
                   }`}
                   aria-label="Shuffle"
                   disabled={isLoading}
