@@ -37,7 +37,7 @@ export function
   const fetchSongs = useCallback(async () => {
     try {
       setIsLoading(true);
-      const response = await fetch("http://localhost:3000/getAllTrack");
+      const response = await fetch("http://192.168.137.1:3000/getAllTrack");
       if (!response.ok) throw new Error("Server is down");
       const data = await response.json();
       setSongs(data);
@@ -129,7 +129,7 @@ export function
   return (
     <div className="flex flex-col md:flex-row gap-4 p-4">
       {/* Song List */}
-      <div className="w-full md:w-1/3 h-[60vh] md:h-[90vh] overflow-y-auto">
+      <div className="w-full md:w-1/3 h-[60vh] md:h-[90vh] overflow-y-auto no-scrollbar">
         <h2 className="text-xl font-bold mb-4">All Songs</h2>
         <div className="grid grid-cols-1 gap-2">
           {songs.map((song) => (
@@ -182,7 +182,7 @@ export function
       </div>
 
       {/* Music Player */}
-      <div className="w-full md:w-1/3 flex justify-center">
+      <div className="w-full md:w-1/3 flex justify-center items-center h-[75vh]">
         {currentSong && (
           <MusicPlayer
             track={{

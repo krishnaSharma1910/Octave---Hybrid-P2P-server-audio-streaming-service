@@ -8,17 +8,11 @@ export default function App() {
         {/* Logo and Title Row */}
         <div className="flex items-center justify-center gap-3 mb-2">
           <img
-            src="/OCTAVE2.png"
+            src="Octave_logo(2).png"
             alt="Octave Logo"
             className="w-10 h-10"
           />
-          <h1 className="text-3xl font-bold">Octave</h1>
         </div>
-
-        {/* Subtitle */}
-        <p className="text-lg text-muted-foreground mb-6">
-          Stream Your Sound. 
-        </p>
 
          <SongList />
       </div>
